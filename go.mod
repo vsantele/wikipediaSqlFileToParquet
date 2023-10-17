@@ -1,4 +1,4 @@
-module vsantele.dev/sqlfile2avro
+module github.com/vsantele/wikipediaSqlFileToParquet
 
 go 1.20
 
