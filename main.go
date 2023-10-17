@@ -57,7 +57,10 @@ func convertTable[T interface{}](name string, date string, schema *T, parser fun
 	}
 	defer reader.Close()
 
-	bufferedReader := bufio.NewReader(reader)
+	bufferedReader := bufio.NewScanner(reader)
+	maxCapacity := 10 * 1024 * 1024
+	buf := make([]byte, maxCapacity)
+	bufferedReader.Buffer(buf, maxCapacity)
 
 	// Create a new Parquet file writer
 	// The file will be written to the specified io.Writer
@@ -68,36 +71,16 @@ func convertTable[T interface{}](name string, date string, schema *T, parser fun
 	go write(ch, filenameOut, schema, &wg)
 
 	// string that contains all the insert statements
-	lineBuffer := ""
-	keepReading := false
-	for {
-		line, isPrefix, err := bufferedReader.ReadLine()
-		if err != nil {
-			if err.Error() == "EOF" {
-				break
-			} else {
-				return err
-			}
-		}
+	for bufferedReader.Scan() {
+		line := bufferedReader.Text()
 
-		lineString := string(line)
-		newKeepReading := keepReading
-		if strings.HasPrefix(lineString, headerLine) {
-			newKeepReading = true
-		}
-		if newKeepReading {
-			lineBuffer += lineString
-		}
-		if strings.HasSuffix(lineString, ";") {
-			newKeepReading = false
-		}
-		keepReading = newKeepReading
-		if !isPrefix && !keepReading && lineBuffer != "" {
-			buf := parser(lineBuffer)
+		if strings.HasPrefix(line, headerLine) && strings.HasSuffix(line, ";") {
+			buf := parser(line)
 			ch <- buf
-			lineBuffer = ""
 		}
-
+	}
+	if err := bufferedReader.Err(); err != nil {
+		log.Fatal(err)
 	}
 	close(ch)
 	wg.Wait()
