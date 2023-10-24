@@ -7,6 +7,8 @@ import (
 	"os"
 	"path"
 	"sync"
+
+	"github.com/vsantele/wikipediaSqlFileToParquet/common/utils"
 )
 
 const wikimediaDumpUrl = "https://dumps.wikimedia.org/"
@@ -25,7 +27,7 @@ func Download(root string, language string, date string, tables []string) {
 }
 
 func downloadFile(root string, language string, date string, name string) {
-	fileName := language + "wiki-" + date + "-" + name + ".sql.gz"
+	fileName := utils.FilenameConcat(language, date, name, "sql.gz")
 	url := wikimediaDumpUrl + language + "wiki/" + date + "/" + fileName
 	outputFile := path.Join(root, fileName)
 

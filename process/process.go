@@ -3,6 +3,7 @@ package process
 import (
 	"bufio"
 	"compress/gzip"
+	"fmt"
 	"log"
 	"os"
 	"strings"
@@ -12,6 +13,7 @@ import (
 
 	"github.com/parquet-go/parquet-go"
 	"github.com/vsantele/wikipediaSqlFileToParquet/common/model"
+	"github.com/vsantele/wikipediaSqlFileToParquet/common/utils"
 	"github.com/vsantele/wikipediaSqlFileToParquet/parser"
 )
 
@@ -39,12 +41,28 @@ func Process(root string, language string, date string, tables []string) {
 
 	}
 	wg.Wait()
+	if len(errCh) > 0 {
+		for err := range errCh {
+			log.Fatal(err)
+		}
+	}
 
 }
 
 func convertTable[T interface{}](root string, language string, name string, date string, schema *T, parser func(line string) [](T)) error {
-	filenameIn := path.Join(root, language+"wiki-"+date+"-"+name+".sql.gz")
-	filenameOut := path.Join(root, language+"wiki-"+date+"-"+name+".parquet")
+	filenameIn := path.Join(root, utils.FilenameConcat(language, date, name, "sql.gz"))
+	filenameOut := path.Join(root, utils.FilenameConcat(language, date, name, "parquet"))
+
+	fileInfo, err := os.Stat(filenameIn)
+	if os.IsNotExist(err) {
+		return fmt.Errorf("file %s does not exist", filenameIn)
+	}
+	if err != nil {
+		return err
+	}
+	if fileInfo.IsDir() {
+		return fmt.Errorf("%s is a directory", filenameIn)
+	}
 
 	fileIn, err := os.Open(filenameIn)
 

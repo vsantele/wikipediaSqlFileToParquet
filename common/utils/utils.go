@@ -9,3 +9,7 @@ func Unquote(input string) string {
 	return strings.ReplaceAll(input, "\\'", "'")
 
 }
+
+func FilenameConcat(language string, date string, name string, extension string) string {
+	return language + "wiki-" + date + "-" + name +"."+ extension
+}
