@@ -24,21 +24,21 @@ func Process(root string, language string, date string, tables []string) {
 
 	for _, table := range tables {
 		wg.Add(1)
-		table := table
-		go func(err chan error) {
+		go func(table string) {
 			switch table {
 			case "page":
-				err <- convertTable(root, language, table, date, new(model.Page), parser.ParseSqlPage)
+				errCh <- convertTable(root, language, table, date, new(model.Page), parser.ParseSqlPage)
 			case "pagelinks":
-				err <- convertTable(root, language, table, date, new(model.PageLink), parser.ParseSqlPageLinks)
+				errCh <- convertTable(root, language, table, date, new(model.PageLink), parser.ParseSqlPageLinks)
 			case "redirect":
-				err <- convertTable(root, language, table, date, new(model.Redirect), parser.ParseSqlRedirect)
+				errCh <- convertTable(root, language, table, date, new(model.Redirect), parser.ParseSqlRedirect)
 			}
-			wg.Done()
-		}(errCh)
+			defer wg.Done()
+		}(table)
 
 	}
 	wg.Wait()
+	close(errCh)
 	if len(errCh) > 0 {
 		for err := range errCh {
 			if err != nil {
