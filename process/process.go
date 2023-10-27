@@ -41,7 +41,9 @@ func Process(root string, language string, date string, tables []string) {
 	wg.Wait()
 	if len(errCh) > 0 {
 		for err := range errCh {
-			log.Fatal(err)
+			if err != nil {
+				log.Fatal(err)
+			}
 		}
 	}
 
