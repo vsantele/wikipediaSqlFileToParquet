@@ -29,10 +29,8 @@ func Process(root string, language string, date string, tables []string) {
 			switch table {
 			case "page":
 				err <- convertTable(root, language, table, date, new(model.Page), parser.ParseSqlPage)
-				break
 			case "pagelinks":
 				err <- convertTable(root, language, table, date, new(model.PageLink), parser.ParseSqlPageLinks)
-				break
 			case "redirect":
 				err <- convertTable(root, language, table, date, new(model.Redirect), parser.ParseSqlRedirect)
 			}
@@ -127,29 +125,20 @@ func write[T interface{}](ch chan [](T), fileName string, schema *T, wg *sync.Wa
 	defer writer.Close()
 	iter := 0
 	totalRow := 0
-	for {
-		select {
-		case buf, ok := <-ch:
-			{
-				iter++
-				if !ok {
-					log.Println("[" + name + "]\t Channel closed, exiting")
-					return
-				}
-				if len(buf) == 0 {
-					continue
-				}
-				nb, err := writer.Write(buf)
-				totalRow += nb
-				if err != nil {
-					panic(err)
-				}
-				if (iter % 30) == 0 {
-					log.Println("["+name+"]\t Wrote", totalRow, "rows")
-					totalRow = 0
-				}
-			}
-
+	for buf := range ch {
+		iter++
+		if len(buf) == 0 {
+			continue
+		}
+		nb, err := writer.Write(buf)
+		totalRow += nb
+		if err != nil {
+			panic(err)
+		}
+		if (iter % 30) == 0 {
+			log.Println("["+name+"]\t Wrote", totalRow, "rows")
+			totalRow = 0
 		}
 	}
+	log.Println("["+name+"]\t Wrote", totalRow, "rows. End of writing")
 }
