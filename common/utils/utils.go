@@ -6,10 +6,10 @@ func Unquote(input string) string {
 	if input == "''" {
 		return ""
 	}
-	return strings.ReplaceAll(input, "\\'", "'")
+	return strings.Replace(strings.Replace(strings.Replace(input, `\'`, `'`, -1), `\"`, `"`, -1), "\\\\", "\\", -1)
 
 }
 
 func FilenameConcat(language string, date string, name string, extension string) string {
-	return language + "wiki-" + date + "-" + name +"."+ extension
+	return language + "wiki-" + date + "-" + name + "." + extension
 }
