@@ -91,7 +91,7 @@ func convertTable[T interface{}](root string, language string, name string, date
 	ch := make(chan [](T), 1000000)
 	var wg sync.WaitGroup
 	wg.Add(1)
-	go write(ch, filenameOut, schema, &wg)
+	go write(ch, filenameOut, schema, &wg, name)
 
 	// string that contains all the insert statements
 	for bufferedReader.Scan() {
@@ -107,14 +107,13 @@ func convertTable[T interface{}](root string, language string, name string, date
 	}
 	close(ch)
 	wg.Wait()
-	log.Println("Write Finished")
+	log.Println("[" + name + "]\t Write Finished")
 	return nil
 }
 
-func write[T interface{}](ch chan [](T), fileName string, schema *T, wg *sync.WaitGroup) {
-
+func write[T interface{}](ch chan [](T), fileName string, schema *T, wg *sync.WaitGroup, name string) {
 	defer wg.Done()
-	log.Println("Write Started")
+	log.Println("[" + name + "]\t Write Started")
 	f, err := os.Create(fileName)
 	if err != nil {
 		panic(err)
@@ -127,24 +126,27 @@ func write[T interface{}](ch chan [](T), fileName string, schema *T, wg *sync.Wa
 	}
 	defer writer.Close()
 	iter := 0
+	totalRow := 0
 	for {
 		select {
 		case buf, ok := <-ch:
 			{
 				iter++
 				if !ok {
-					log.Println("Channel closed, exiting")
+					log.Println("[" + name + "]\t Channel closed, exiting")
 					return
 				}
 				if len(buf) == 0 {
 					continue
 				}
 				nb, err := writer.Write(buf)
+				totalRow += nb
 				if err != nil {
 					panic(err)
 				}
 				if (iter % 30) == 0 {
-					log.Println("Wrote", nb, "rows")
+					log.Println("["+name+"]\t Wrote", totalRow, "rows")
+					totalRow = 0
 				}
 			}
 
